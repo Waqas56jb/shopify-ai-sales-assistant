@@ -1053,6 +1053,30 @@
   gap: 14px;
 }
 
+.embed-code {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #1a1714;
+  color: #f4efe6;
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.embed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.embed-actions .btn-secondary {
+  text-decoration: none;
+}
+
 .tone-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

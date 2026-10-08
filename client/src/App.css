@@ -12,6 +12,21 @@
     linear-gradient(160deg, #120f0d 0%, #1a1714 45%, #241f1a 100%);
 }
 
+/* Embed / iframe widget mode */
+.app-stage.embed-mode {
+  padding: 0;
+  background: var(--mist);
+  place-items: stretch;
+}
+
+.app-stage.embed-mode .phone {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .phone {
   width: min(100%, 430px);
   height: min(900px, calc(100dvh - 32px - var(--safe-top) - var(--safe-bottom)));

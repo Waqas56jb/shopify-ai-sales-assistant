@@ -176,7 +176,7 @@ function ProductCard({ product, index }) {
   )
 }
 
-function ChatPage({ onBack }) {
+function ChatPage({ onBack, embed = false }) {
   const [messages, setMessages] = useState([STARTER])
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -327,7 +327,12 @@ function ChatPage({ onBack }) {
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
     >
       <header className="chat-header">
-        <button className="icon-btn" type="button" aria-label="Back to cover" onClick={onBack}>
+        <button
+          className="icon-btn"
+          type="button"
+          aria-label={embed ? 'Close chat' : 'Back to cover'}
+          onClick={onBack}
+        >
           <ChevronLeft size={18} />
         </button>
         <div className="brand-mark" aria-hidden="true">
@@ -442,17 +447,39 @@ function ChatPage({ onBack }) {
   )
 }
 
+function isEmbedMode() {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('embed') === '1' || params.get('widget') === '1'
+  } catch {
+    return false
+  }
+}
+
 export default function App() {
-  const [view, setView] = useState('cover')
+  const embed = isEmbedMode()
+  const [view, setView] = useState(embed ? 'chat' : 'cover')
+
+  function handleBack() {
+    if (embed) {
+      try {
+        window.parent?.postMessage({ type: 'deskday-close' }, '*')
+      } catch {
+        // ignore
+      }
+      return
+    }
+    setView('cover')
+  }
 
   return (
-    <div className="app-stage">
+    <div className={`app-stage${embed ? ' embed-mode' : ''}`}>
       <div className="phone" role="application" aria-label="Desk and Day AI assistant">
         <AnimatePresence mode="wait">
           {view === 'cover' ? (
             <CoverPage key="cover" onOpen={() => setView('chat')} />
           ) : (
-            <ChatPage key="chat" onBack={() => setView('cover')} />
+            <ChatPage key="chat" onBack={handleBack} embed={embed} />
           )}
         </AnimatePresence>
       </div>

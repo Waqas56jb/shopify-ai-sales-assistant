@@ -1,14 +1,33 @@
 import { useEffect, useState } from 'react'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, Copy, Check } from 'lucide-react'
 import { useAppData } from '../context/AppDataContext'
 import { api } from '../lib/api'
 import { API_BASE } from '../lib/config'
+
+const WIDGET_HOST = 'https://shopify-ai-sales-assistant.vercel.app'
+const EMBED_SCRIPT = `<script
+  src="${WIDGET_HOST}/widget.js"
+  data-position="right"
+  data-color="#a67c52"
+  defer
+></script>`
 
 export default function Settings() {
   const { widgetSettings, setWidgetSettings, saveWidgetSettings, dbStatus } = useAppData()
   const [tones, setTones] = useState([])
   const [saving, setSaving] = useState(false)
   const [savedNote, setSavedNote] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  async function copyEmbed() {
+    try {
+      await navigator.clipboard.writeText(EMBED_SCRIPT)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+    }
+  }
 
   useEffect(() => {
     let alive = true
@@ -68,6 +87,27 @@ export default function Settings() {
 
   return (
     <div className="settings-stack">
+      <div className="panel">
+        <div className="panel-head">
+          <h3>Embed widget</h3>
+          <span>Paste this script on any website</span>
+        </div>
+        <pre className="embed-code">{EMBED_SCRIPT}</pre>
+        <div className="embed-actions">
+          <button className="btn-primary" type="button" onClick={copyEmbed}>
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+            {copied ? 'Copied' : 'Copy script tag'}
+          </button>
+          <a className="btn-secondary" href={`${WIDGET_HOST}/embed-demo.html`} target="_blank" rel="noreferrer">
+            Open demo page
+          </a>
+        </div>
+        <div className="supabase-note">
+          Widget URL: {WIDGET_HOST}/widget.js · Chat loads from the same host with{' '}
+          <code>?embed=1</code> · API: {API_BASE}
+        </div>
+      </div>
+
       <div className="panel">
         <div className="panel-head">
           <h3>Assistant tone</h3>
