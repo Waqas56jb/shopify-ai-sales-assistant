@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { useAppData } from '../context/AppDataContext'
 import { api } from '../lib/api'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { API_BASE } from '../lib/config'
 
 export default function Settings() {
   const { widgetSettings, setWidgetSettings, saveWidgetSettings, dbStatus } = useAppData()
@@ -112,8 +112,7 @@ export default function Settings() {
           {savedNote && <div className="supabase-note">{savedNote}</div>}
           <div className="supabase-note">
             Storage: {dbStatus === 'connected' ? 'Supabase via backend API' : 'API offline'}.
-            {isSupabaseConfigured ? ' Anon env present.' : ''} Tone changes the assistant voice without
-            changing product facts.
+            API: {API_BASE}. Tone changes the assistant voice without changing product facts.
           </div>
         </div>
 

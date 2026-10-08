@@ -24,18 +24,39 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5174'
 const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN || 'http://localhost:5175'
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
-const app = express()
-app.use(
-  cors({
-    origin: [
+function allowedOrigins() {
+  const fromEnv = String(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return [
+    ...new Set([
       CLIENT_ORIGIN,
       ADMIN_ORIGIN,
+      ...fromEnv,
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:5175',
       'http://127.0.0.1:5174',
       'http://127.0.0.1:5175',
-    ],
+      'https://shopify-ai-sales-assistant.vercel.app',
+      'https://shopify-ai-sales-assistant-34sp.vercel.app',
+      'https://shopify-ai-sales-assistant-54i6.vercel.app',
+    ]),
+  ]
+}
+
+const app = express()
+app.use(
+  cors({
+    origin(origin, callback) {
+      const list = allowedOrigins()
+      // Allow non-browser clients (no Origin) and known frontends
+      if (!origin || list.includes(origin)) return callback(null, true)
+      console.warn('[cors] blocked origin:', origin)
+      return callback(null, false)
+    },
+    credentials: true,
   })
 )
 app.use(express.json({ limit: '2mb' }))
@@ -272,9 +293,13 @@ app.post('/api/chat', async (req, res) => {
 
 await refreshKnowledgeFromDb()
 
-app.listen(PORT, () => {
-  console.log(`Desk & Day API running on http://localhost:${PORT}`)
-  console.log(`Health: http://localhost:${PORT}/api/health`)
-  console.log(`Memory turns: ${MEMORY_TURNS}`)
-  console.log(`Admin API: http://localhost:${PORT}/api/admin/health-db`)
-})
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Desk & Day API running on http://localhost:${PORT}`)
+    console.log(`Health: http://localhost:${PORT}/api/health`)
+    console.log(`Memory turns: ${MEMORY_TURNS}`)
+    console.log(`Admin API: http://localhost:${PORT}/api/admin/health-db`)
+  })
+}
+
+export default app

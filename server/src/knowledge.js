@@ -93,7 +93,10 @@ let cache = {
 }
 
 const PUBLIC_BASE = () =>
-  (process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3001}`).replace(/\/$/, '')
+  (
+    process.env.PUBLIC_BASE_URL ||
+    'https://shopify-ai-sales-assistant-54i6.vercel.app'
+  ).replace(/\/$/, '')
 
 function absoluteImage(url = '') {
   if (!url) return ''

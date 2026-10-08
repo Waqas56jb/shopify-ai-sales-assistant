@@ -1,6 +1,5 @@
 import { useAppData } from '../context/AppDataContext'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { API_BASE } from '../lib/config'
 
 function resolveImage(url) {
   if (!url) return ''
