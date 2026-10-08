@@ -1,0 +1,26 @@
+{
+  "name": "shopify-ai-sales-assistant-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:migrate:tone": "node scripts/migrate-tone.js",
+    "db:seed": "node scripts/seed-deskday.js",
+    "db:verify": "node scripts/verify.js",
+    "test:chat": "node scripts/test-chat-edge.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "openai": "^4.86.2",
+    "pg": "^8.14.1"
+  }
+}
