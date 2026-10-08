@@ -157,8 +157,12 @@ function ProductCard({ product, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08 * index, duration: 0.35 }}
     >
-      <div className="product-visual" aria-hidden="true">
-        {product.imageUrl ? <img src={product.imageUrl} alt="" /> : <span />}
+      <div className="product-visual">
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt={product.name || 'Product'} loading="lazy" />
+        ) : (
+          <span aria-hidden="true" />
+        )}
       </div>
       <div className="product-body">
         <div className="product-top">

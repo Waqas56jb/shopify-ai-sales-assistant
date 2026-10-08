@@ -865,7 +865,10 @@
 .kb-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  padding: 2px;
+  background: #f3eee6;
 }
 
 .kb-thumb-empty {
