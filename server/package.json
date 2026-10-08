@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "db:migrate": "node scripts/migrate.js",
     "db:migrate:tone": "node scripts/migrate-tone.js",
+    "db:migrate:messages": "node scripts/migrate-messages.js",
     "db:seed": "node scripts/seed-deskday.js",
     "db:verify": "node scripts/verify.js",
     "test:chat": "node scripts/test-chat-edge.js"

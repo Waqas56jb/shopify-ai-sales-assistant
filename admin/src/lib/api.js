@@ -18,6 +18,15 @@ export const api = {
   updateLead: (id, body) =>
     request(`/api/admin/leads/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   getConversations: () => request('/api/admin/conversations'),
+  getConversation: (id) => request(`/api/admin/conversations/${id}`),
+  updateConversation: (id, body) =>
+    request(`/api/admin/conversations/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  replyConversation: (id, content) =>
+    request(`/api/admin/conversations/${id}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+  getConversationMessages: (id) => request(`/api/admin/conversations/${id}/messages`),
   getKnowledge: () => request('/api/admin/knowledge'),
   createKnowledge: (body) =>
     request('/api/admin/knowledge', { method: 'POST', body: JSON.stringify(body) }),

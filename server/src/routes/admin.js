@@ -9,6 +9,7 @@ import {
   mapWidget,
 } from '../db.js'
 import { ASSISTANT_TONES, isValidTone } from '../tones.js'
+import { listMessagesByConversation, postAdminReply } from '../conversations.js'
 
 const router = Router()
 
@@ -114,10 +115,77 @@ router.post('/conversations', async (req, res) => {
       status: req.body.status || 'open',
       last_message: req.body.lastMessage || '',
       messages_count: Number(req.body.messages || 0),
+      session_id: req.body.sessionId || '',
     }
     const { data, error } = await sb.from(TABLES.conversations).insert(payload).select('*').single()
     if (error) throw error
     res.status(201).json({ item: mapConversation(data) })
+  } catch (err) {
+    handleError(res, err)
+  }
+})
+
+router.get('/conversations/:id', async (req, res) => {
+  try {
+    const sb = getSupabaseAdmin()
+    const { data, error } = await sb
+      .from(TABLES.conversations)
+      .select('*')
+      .eq('id', req.params.id)
+      .single()
+    if (error) throw error
+    const messages = await listMessagesByConversation(req.params.id)
+    res.json({ item: mapConversation(data), messages })
+  } catch (err) {
+    handleError(res, err)
+  }
+})
+
+router.patch('/conversations/:id', async (req, res) => {
+  try {
+    const sb = getSupabaseAdmin()
+    const patch = { updated_at: new Date().toISOString() }
+    if (req.body.status) patch.status = req.body.status
+    if (req.body.visitor != null) patch.visitor = req.body.visitor
+    if (req.body.handoffNote != null) patch.handoff_note = req.body.handoffNote
+    const { data, error } = await sb
+      .from(TABLES.conversations)
+      .update(patch)
+      .eq('id', req.params.id)
+      .select('*')
+      .single()
+    if (error) throw error
+    res.json({ item: mapConversation(data) })
+  } catch (err) {
+    handleError(res, err)
+  }
+})
+
+router.post('/conversations/:id/reply', async (req, res) => {
+  try {
+    const content = String(req.body.content || '').trim()
+    if (!content) return res.status(400).json({ error: 'Reply content required' })
+    const message = await postAdminReply({
+      conversationId: req.params.id,
+      content,
+    })
+    const sb = getSupabaseAdmin()
+    const { data, error } = await sb
+      .from(TABLES.conversations)
+      .select('*')
+      .eq('id', req.params.id)
+      .single()
+    if (error) throw error
+    res.status(201).json({ message, item: mapConversation(data) })
+  } catch (err) {
+    handleError(res, err)
+  }
+})
+
+router.get('/conversations/:id/messages', async (req, res) => {
+  try {
+    const messages = await listMessagesByConversation(req.params.id)
+    res.json({ items: messages.map ? messages : messages })
   } catch (err) {
     handleError(res, err)
   }

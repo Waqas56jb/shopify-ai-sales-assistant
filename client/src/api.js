@@ -1,5 +1,13 @@
 import { API_BASE } from './config'
 
+export async function fetchSessionMessages(sessionId, after) {
+  const q = after ? `?after=${encodeURIComponent(after)}` : ''
+  const res = await fetch(`${API_BASE}/api/chat/session/${sessionId}/messages${q}`)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Failed to load session messages')
+  return data
+}
+
 export async function streamChat({
   messages,
   sessionId,
@@ -8,6 +16,7 @@ export async function streamChat({
   onToken,
   onRecommendations,
   onLead,
+  onConversation,
   onError,
 }) {
   const response = await fetch(`${API_BASE}/api/chat`, {
@@ -59,6 +68,8 @@ export async function streamChat({
         onRecommendations?.(payload.items || [])
       } else if (payload.type === 'lead') {
         onLead?.(payload.item)
+      } else if (payload.type === 'conversation') {
+        onConversation?.(payload)
       } else if (payload.type === 'error') {
         onError?.(payload.message || 'Assistant error')
       }

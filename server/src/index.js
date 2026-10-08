@@ -14,6 +14,13 @@ import {
   getAssistantToneId,
 } from './knowledge.js'
 import { extractLeadBlock, stripPartialLead, mergeLeadState, upsertLead } from './leads.js'
+import {
+  wantsHandoff,
+  upsertConversationRecord,
+  appendMessages,
+  listMessagesBySession,
+  getConversationBySession,
+} from './conversations.js'
 import adminRoutes from './routes/admin.js'
 import { TABLES, getSupabaseAdmin } from './db.js'
 import { ASSISTANT_TONES } from './tones.js'
@@ -42,6 +49,7 @@ function allowedOrigins() {
       'https://shopify-ai-sales-assistant.vercel.app',
       'https://shopify-ai-sales-assistant-34sp.vercel.app',
       'https://shopify-ai-sales-assistant-54i6.vercel.app',
+      'https://1mfsbv-dg.myshopify.com',
     ]),
   ]
 }
@@ -51,8 +59,13 @@ app.use(
   cors({
     origin(origin, callback) {
       const list = allowedOrigins()
-      // Allow non-browser clients (no Origin) and known frontends
       if (!origin || list.includes(origin)) return callback(null, true)
+      try {
+        // Embed widget on Shopify storefronts / previews
+        if (/\.myshopify\.com$/i.test(new URL(origin).hostname)) return callback(null, true)
+      } catch {
+        // ignore
+      }
       console.warn('[cors] blocked origin:', origin)
       return callback(null, false)
     },
@@ -70,48 +83,6 @@ function getOpenAI() {
     throw err
   }
   return new OpenAI({ apiKey: key })
-}
-
-async function upsertConversation({ sessionId, visitor, lastMessage, messagesCount, leadName }) {
-  const sb = getSupabaseAdmin()
-  const payload = {
-    visitor: leadName || visitor || 'Widget guest',
-    channel: 'widget',
-    status: 'open',
-    last_message: String(lastMessage || '').slice(0, 240),
-    messages_count: messagesCount,
-    updated_at: new Date().toISOString(),
-  }
-
-  if (sessionId) {
-    const { data: existing } = await sb
-      .from(TABLES.conversations)
-      .select('id')
-      .eq('channel', 'widget')
-      .eq('visitor', `session:${sessionId}`)
-      .limit(1)
-
-    if (existing?.[0]?.id) {
-      const { error } = await sb
-        .from(TABLES.conversations)
-        .update({ ...payload, visitor: `session:${sessionId}` })
-        .eq('id', existing[0].id)
-      if (error) throw error
-      return existing[0].id
-    }
-
-    const { data, error } = await sb
-      .from(TABLES.conversations)
-      .insert({ ...payload, visitor: `session:${sessionId}` })
-      .select('id')
-      .single()
-    if (error) throw error
-    return data.id
-  }
-
-  const { data, error } = await sb.from(TABLES.conversations).insert(payload).select('id').single()
-  if (error) throw error
-  return data.id
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -151,6 +122,20 @@ app.get('/api/knowledge', async (_req, res) => {
 
 app.use('/api/admin', adminRoutes)
 
+/** Client polls this for admin replies */
+app.get('/api/chat/session/:sessionId/messages', async (req, res) => {
+  try {
+    const sessionId = String(req.params.sessionId || '').slice(0, 80)
+    const after = req.query.after || undefined
+    const items = await listMessagesBySession(sessionId, { after })
+    const conversation = await getConversationBySession(sessionId)
+    res.json({ items, conversation })
+  } catch (err) {
+    console.error('[session-messages]', err.message)
+    res.status(500).json({ error: err.message || 'Failed to load messages' })
+  }
+})
+
 app.post('/api/chat', async (req, res) => {
   const messages = Array.isArray(req.body?.messages) ? req.body.messages : []
   const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.slice(0, 80) : ''
@@ -167,6 +152,15 @@ app.post('/api/chat', async (req, res) => {
 
   await refreshKnowledgeFromDb()
   let leadState = mergeLeadState({}, incomingLead, clean)
+  const latestUser = clean[clean.length - 1].content
+  const escalate = wantsHandoff(latestUser)
+  let existingConv = null
+  try {
+    existingConv = sessionId ? await getConversationBySession(sessionId) : null
+  } catch {
+    existingConv = null
+  }
+  const alreadyHandedOff = existingConv?.status === 'handed_off' || escalate
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
   res.setHeader('Cache-Control', 'no-cache, no-transform')
@@ -177,7 +171,6 @@ app.post('/api/chat', async (req, res) => {
     res.write(`data: ${JSON.stringify(payload)}\n\n`)
   }
 
-  const latestUser = clean[clean.length - 1].content
   let rawAssistant = ''
   let visibleAssistant = ''
 
@@ -195,6 +188,7 @@ app.post('/api/chat', async (req, res) => {
           content: buildSystemPrompt({
             toneId: getAssistantToneId(),
             leadState,
+            handedOff: alreadyHandedOff,
           }),
         },
         ...clean,
@@ -215,7 +209,6 @@ app.post('/api/chat', async (req, res) => {
 
     const { cleanText, lead: leadFromModel } = extractLeadBlock(rawAssistant)
     if (cleanText !== visibleAssistant) {
-      // Final sync if trailing block completed
       const remainder = cleanText.slice(visibleAssistant.length)
       if (remainder) send({ type: 'token', content: remainder })
       visibleAssistant = cleanText
@@ -224,11 +217,19 @@ app.post('/api/chat', async (req, res) => {
       send({ type: 'token', content: cleanText })
     }
 
-    leadState = mergeLeadState(leadState, leadFromModel || {}, [...clean, { role: 'assistant', content: visibleAssistant }])
+    leadState = mergeLeadState(leadState, leadFromModel || {}, [
+      ...clean,
+      { role: 'assistant', content: visibleAssistant },
+    ])
+
+    if (escalate && !leadState.message) {
+      leadState.message = 'Requested human / live help from chat widget'
+    }
 
     let savedLead = null
     try {
-      if (leadState.name || leadState.email || leadState.phone) {
+      if (leadState.name || leadState.email || leadState.phone || escalate) {
+        if (!leadState.name && escalate) leadState.name = leadState.name || 'Chat guest'
         savedLead = await upsertLead(leadState, { sessionId })
         if (savedLead?.id) leadState.id = savedLead.id
       }
@@ -236,14 +237,23 @@ app.post('/api/chat', async (req, res) => {
       console.warn('[chat] lead upsert skipped:', leadErr.message)
     }
 
+    let conversation = null
     try {
-      await upsertConversation({
+      conversation = await upsertConversationRecord({
         sessionId,
-        visitor: 'Widget guest',
-        leadName: leadState.name,
+        visitor: leadState.name || 'Widget guest',
+        status: escalate || alreadyHandedOff ? 'handed_off' : 'open',
         lastMessage: latestUser,
         messagesCount: clean.length + 1,
+        leadId: savedLead?.id || leadState.id || null,
+        handoffNote: escalate ? latestUser.slice(0, 240) : existingConv?.handoffNote || '',
       })
+
+      // Persist only the newest user + assistant turn (avoid duplicates on each call)
+      await appendMessages(conversation.id, sessionId, [
+        { role: 'user', content: latestUser },
+        { role: 'assistant', content: visibleAssistant },
+      ])
     } catch (persistErr) {
       console.warn('[chat] conversation persist skipped:', persistErr.message)
     }
@@ -266,9 +276,14 @@ app.post('/api/chat', async (req, res) => {
     }
 
     if (savedLead || leadState.name || leadState.email) {
+      send({ type: 'lead', item: savedLead || leadState })
+    }
+
+    if (conversation) {
       send({
-        type: 'lead',
-        item: savedLead || leadState,
+        type: 'conversation',
+        item: conversation,
+        handedOff: conversation.status === 'handed_off',
       })
     }
 

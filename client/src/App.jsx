@@ -7,7 +7,7 @@ import {
   Sparkles,
   Package,
 } from 'lucide-react'
-import { streamChat } from './api'
+import { streamChat, fetchSessionMessages } from './api'
 import MarkdownMessage from './MarkdownMessage'
 import './App.css'
 
@@ -181,7 +181,9 @@ function ChatPage({ onBack, embed = false }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [lead, setLead] = useState(() => loadLeadDraft())
+  const [handedOff, setHandedOff] = useState(false)
   const sessionIdRef = useRef(getOrCreateSessionId())
+  const seenAdminIds = useRef(new Set())
   const endRef = useRef(null)
   const areaRef = useRef(null)
   const abortRef = useRef(null)
@@ -192,6 +194,43 @@ function ChatPage({ onBack, embed = false }) {
 
   useEffect(() => {
     return () => abortRef.current?.abort()
+  }, [])
+
+  // Pull human/admin replies into the live chat
+  useEffect(() => {
+    const sessionId = sessionIdRef.current
+    let alive = true
+    async function poll() {
+      try {
+        const res = await fetchSessionMessages(sessionId)
+        if (!alive) return
+        if (res.conversation?.status === 'handed_off') setHandedOff(true)
+        const adminMsgs = (res.items || []).filter((m) => m.role === 'admin')
+        const fresh = adminMsgs.filter((m) => !seenAdminIds.current.has(m.id))
+        if (!fresh.length) return
+        fresh.forEach((m) => seenAdminIds.current.add(m.id))
+        setMessages((prev) => [
+          ...prev,
+          ...fresh.map((m) => ({
+            id: m.id,
+            role: 'assistant',
+            fromAdmin: true,
+            text: m.content,
+            time: nowLabel(),
+            streaming: false,
+            recommendations: null,
+          })),
+        ])
+      } catch {
+        // ignore poll errors
+      }
+    }
+    poll()
+    const t = setInterval(poll, 6000)
+    return () => {
+      alive = false
+      clearInterval(t)
+    }
   }, [])
 
   async function pushUser(value) {
@@ -256,6 +295,9 @@ function ChatPage({ onBack, embed = false }) {
           }
           setLead(next)
           saveLeadDraft(next)
+        },
+        onConversation: (payload) => {
+          if (payload?.handedOff) setHandedOff(true)
         },
         onError: (message) => {
           setMessages((prev) =>
@@ -342,7 +384,11 @@ function ChatPage({ onBack, embed = false }) {
           <h1>Desk & Day</h1>
           <p>
             <span className="live-dot" aria-hidden="true" />
-            {busy ? 'Writing a reply…' : 'Sales assistant · Online'}
+            {busy
+              ? 'Writing a reply…'
+              : handedOff
+                ? 'Human handoff · waiting for operator'
+                : 'Sales assistant · Online'}
           </p>
         </div>
       </header>
@@ -386,7 +432,11 @@ function ChatPage({ onBack, embed = false }) {
               transition={{ duration: 0.28, ease: 'easeOut' }}
             >
               <div className={`bubble ${msg.role}${msg.recommendations?.length ? ' rich' : ''}`}>
-                {msg.role === 'assistant' && <div className="bubble-label">Desk & Day</div>}
+                {msg.role === 'assistant' && (
+                  <div className="bubble-label">
+                    {msg.fromAdmin ? 'Human operator' : 'Desk & Day'}
+                  </div>
+                )}
                 <div className="bubble-text">
                   {msg.role === 'assistant' ? (
                     <MarkdownMessage text={msg.text} />

@@ -190,7 +190,7 @@ export function getAssistantToneId() {
 /** @deprecated use getProducts() */
 export const PRODUCTS = FALLBACK_PRODUCTS
 
-export function buildSystemPrompt({ toneId, leadState } = {}) {
+export function buildSystemPrompt({ toneId, leadState, handedOff = false } = {}) {
   const products = getProducts()
   const extras = getKnowledgeItems().filter((k) => k.type !== 'product')
   const tone = getTone(toneId || getAssistantToneId())
@@ -247,8 +247,17 @@ Structure every reply with clear spacing:
 - Align content cleanly — no walls of text, no cramped lines.
 - Prices always with \$ and product full names on first mention.
 
+# Human escalation (demo handoff — ALWAYS support this)
+If the shopper asks for a human, real person, live agent, operator, or to “speak with someone”:
+- Confirm warmly that you are escalating them to the tutorial operator / admin dashboard.
+- Say their chat is logged and a person can reply from the admin Conversations page.
+- Ask for name + email (one at a time if missing) so the operator can follow up.
+- NEVER say you cannot connect them or that no human is available.
+- Keep helping with products/policies while they wait.
+${handedOff ? '- This chat is ALREADY marked handed_off — acknowledge that the team has been notified; do not refuse.' : ''}
+
 # Lead capture (step-by-step, polite)
-When the shopper shows interest in follow-up, a quote, or “contact me”, collect ONE field at a time:
+When the shopper shows interest in follow-up, a quote, “contact me”, or human help, collect ONE field at a time:
 1) name → 2) email → 3) phone → 4) short note (what they want help with).
 Already known lead fields (do not re-ask):
 - name: ${knownLead.name || '(unknown)'}

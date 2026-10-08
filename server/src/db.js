@@ -5,6 +5,7 @@ const TABLE_PREFIX = 'shopify_store_database_'
 export const TABLES = {
   leads: `${TABLE_PREFIX}leads`,
   conversations: `${TABLE_PREFIX}conversations`,
+  messages: `${TABLE_PREFIX}messages`,
   knowledge: `${TABLE_PREFIX}knowledge`,
   trainingJobs: `${TABLE_PREFIX}training_jobs`,
   widgetSettings: `${TABLE_PREFIX}widget_settings`,
@@ -43,6 +44,10 @@ export function mapConversation(row) {
     status: row.status,
     lastMessage: row.last_message,
     messages: row.messages_count,
+    sessionId: row.session_id || '',
+    leadId: row.lead_id || null,
+    handoffNote: row.handoff_note || '',
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
 }
