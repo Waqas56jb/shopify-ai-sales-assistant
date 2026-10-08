@@ -13,10 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: path.resolve(__dirname, '../.env') })
 
 const BUCKET = 'shopify_store_database_assets'
-const PUBLIC_BASE = (process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3001}`).replace(
-  /\/$/,
-  ''
-)
+const API_BASE = 'https://shopify-ai-sales-assistant-54i6.vercel.app'
 
 const IMAGE_FILES = [
   {
@@ -54,7 +51,7 @@ async function uploadImages() {
   const urls = {}
 
   for (const img of IMAGE_FILES) {
-    urls[img.local] = `${PUBLIC_BASE}/products/${img.local}`
+    urls[img.local] = `${API_BASE}/products/${img.local}`
   }
 
   if (!url || !key) {

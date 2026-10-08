@@ -92,16 +92,12 @@ let cache = {
   loadedAt: 0,
 }
 
-const PUBLIC_BASE = () =>
-  (
-    process.env.PUBLIC_BASE_URL ||
-    'https://shopify-ai-sales-assistant-54i6.vercel.app'
-  ).replace(/\/$/, '')
+const API_BASE = 'https://shopify-ai-sales-assistant-54i6.vercel.app'
 
 function absoluteImage(url = '') {
   if (!url) return ''
   if (/^https?:\/\//i.test(url)) return url
-  return `${PUBLIC_BASE()}${url.startsWith('/') ? url : `/${url}`}`
+  return `${API_BASE}${url.startsWith('/') ? url : `/${url}`}`
 }
 
 function knowledgeRowToProduct(item) {

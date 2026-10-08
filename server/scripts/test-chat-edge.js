@@ -3,7 +3,7 @@
  */
 import 'dotenv/config'
 
-const BASE = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3001}`
+const BASE = 'https://shopify-ai-sales-assistant-54i6.vercel.app'
 
 async function chat(messages, { sessionId = 'edge-test', lead = {} } = {}) {
   const res = await fetch(`${BASE}/api/chat`, {
