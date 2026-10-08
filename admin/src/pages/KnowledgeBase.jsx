@@ -54,15 +54,15 @@ export default function KnowledgeBase() {
   }
 
   return (
-    <div className="split-2">
+    <div className="kb-page">
       <div className="panel">
         <div className="panel-head">
           <h3>Add knowledge item</h3>
           <span>
-            Image · price · description · order · {dbStatus === 'connected' ? 'Supabase' : 'Local'}
+            Image · price · description · order · {dbStatus === 'connected' ? 'Supabase' : 'API'}
           </span>
         </div>
-        <form className="kb-form" onSubmit={onSubmit}>
+        <form className="kb-form kb-form-grid" onSubmit={onSubmit}>
           <div className="field">
             <label>Title</label>
             <input
@@ -87,17 +87,7 @@ export default function KnowledgeBase() {
             <input
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
-              placeholder="249"
-            />
-          </div>
-          <div className="field">
-            <label>Description</label>
-            <textarea
-              rows={4}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Clear product or policy details for training..."
-              required
+              placeholder="39"
             />
           </div>
           <div className="field">
@@ -109,6 +99,16 @@ export default function KnowledgeBase() {
               onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
             />
           </div>
+          <div className="field kb-form-span">
+            <label>Description</label>
+            <textarea
+              rows={3}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Clear product or policy details for training..."
+              required
+            />
+          </div>
           <div className="field">
             <label>Image</label>
             <input type="file" accept="image/*" onChange={onImage} />
@@ -118,10 +118,12 @@ export default function KnowledgeBase() {
               </div>
             )}
           </div>
-          <button className="btn-primary" type="submit" disabled={saving}>
-            <Plus size={16} />
-            {saving ? 'Saving…' : 'Save & queue training'}
-          </button>
+          <div className="field kb-form-actions">
+            <button className="btn-primary" type="submit" disabled={saving}>
+              <Plus size={16} />
+              {saving ? 'Saving…' : 'Save & queue training'}
+            </button>
+          </div>
         </form>
       </div>
 
@@ -145,7 +147,7 @@ export default function KnowledgeBase() {
                     </div>
                   )}
                 </div>
-                <div>
+                <div className="kb-item-body">
                   <h4>{item.title}</h4>
                   <p>{item.description}</p>
                   <div className="kb-meta">

@@ -646,6 +646,8 @@
   padding: 22px 24px 40px;
   width: 100%;
   max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .grid-stats {
@@ -821,8 +823,21 @@
 
 .split-2 {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   gap: 14px;
+  align-items: start;
+  width: 100%;
+}
+
+.kb-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.kb-page .panel {
+  width: 100%;
 }
 
 .kb-form {
@@ -830,20 +845,41 @@
   gap: 10px;
 }
 
+.kb-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.kb-form-span,
+.kb-form-actions {
+  grid-column: 1 / -1;
+}
+
+.kb-form-actions .btn-primary {
+  width: auto;
+}
+
 .kb-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 100%;
 }
 
 .kb-item {
   display: grid;
-  grid-template-columns: 64px 1fr auto;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
   gap: 12px;
   padding: 12px;
   border-radius: 14px;
   border: 1px solid var(--line);
   background: #fff;
+  min-width: 0;
+  width: 100%;
+  align-items: start;
+}
+
+.kb-item-body {
   min-width: 0;
 }
 
@@ -854,10 +890,10 @@
 }
 
 .kb-thumb {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 12px;
-  background: linear-gradient(145deg, #e8dcc8, #cbb89a);
+  background: #f3eee6;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -1086,10 +1122,16 @@
   }
 }
 
-/* —— Mobile / drawer —— */
-@media (max-width: 900px) {
+/* —— Tablet / mobile drawer —— */
+@media (max-width: 980px) {
   .shell {
-    grid-template-columns: 1fr;
+    display: block;
+    grid-template-columns: none;
+  }
+
+  .main {
+    width: 100%;
+    min-height: 100dvh;
   }
 
   .mobile-nav-toggle {
@@ -1144,6 +1186,12 @@
 
   .content {
     padding: 16px 14px calc(28px + var(--safe-bottom));
+    max-width: none;
+    margin: 0;
+  }
+
+  .split-2 {
+    grid-template-columns: 1fr;
   }
 
   .panel-head {
@@ -1165,6 +1213,10 @@
     grid-template-columns: 1fr;
   }
 
+  .kb-form-grid {
+    grid-template-columns: 1fr;
+  }
+
   .login-card {
     border-radius: 18px;
   }
@@ -1174,6 +1226,10 @@
   }
 
   .btn-primary {
+    width: 100%;
+  }
+
+  .kb-form-actions .btn-primary {
     width: 100%;
   }
 
@@ -1187,12 +1243,12 @@
   }
 
   .kb-item {
-    grid-template-columns: 56px 1fr;
+    grid-template-columns: 64px 1fr;
   }
 
   .kb-thumb {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
   }
 
   .kb-actions {
