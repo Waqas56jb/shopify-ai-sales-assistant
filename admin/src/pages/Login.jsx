@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { LogIn, ShieldCheck, Sparkles, KeyRound, Mail } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { DEMO_CREDENTIALS } from '../data/mock'
 
 export default function Login() {
   const { user, login } = useAuth()
@@ -17,12 +16,6 @@ export default function Login() {
     const result = login(email, password)
     if (!result.ok) setError(result.error)
     else setError('')
-  }
-
-  function fillDemo() {
-    setEmail(DEMO_CREDENTIALS.email)
-    setPassword(DEMO_CREDENTIALS.password)
-    setError('')
   }
 
   return (
@@ -107,25 +100,6 @@ export default function Login() {
                 Sign in
               </button>
             </form>
-
-            <div className="login-demo">
-              <div className="login-demo-head">
-                <span>Demo credentials</span>
-                <button type="button" className="login-demo-fill" onClick={fillDemo}>
-                  Use demo
-                </button>
-              </div>
-              <dl className="login-demo-grid">
-                <div>
-                  <dt>Email</dt>
-                  <dd>{DEMO_CREDENTIALS.email}</dd>
-                </div>
-                <div>
-                  <dt>Password</dt>
-                  <dd>{DEMO_CREDENTIALS.password}</dd>
-                </div>
-              </dl>
-            </div>
           </div>
         </section>
       </div>
