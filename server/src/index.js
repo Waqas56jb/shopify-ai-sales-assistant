@@ -13,7 +13,14 @@ import {
   getProducts,
   getAssistantToneId,
 } from './knowledge.js'
-import { extractLeadBlock, stripPartialLead, mergeLeadState, upsertLead } from './leads.js'
+import {
+  extractLeadBlock,
+  stripPartialLead,
+  mergeLeadState,
+  upsertLead,
+  preferName,
+  isPlaceholderName,
+} from './leads.js'
 import {
   wantsHandoff,
   upsertConversationRecord,
@@ -229,19 +236,29 @@ app.post('/api/chat', async (req, res) => {
     let savedLead = null
     try {
       if (leadState.name || leadState.email || leadState.phone || escalate) {
-        if (!leadState.name && escalate) leadState.name = leadState.name || 'Chat guest'
+        // Only use placeholder on escalate when we still don't know the shopper
+        if (escalate && isPlaceholderName(leadState.name)) {
+          leadState.name = preferName(leadState.name) || 'Chat guest'
+        }
         savedLead = await upsertLead(leadState, { sessionId })
-        if (savedLead?.id) leadState.id = savedLead.id
+        if (savedLead?.id) {
+          leadState.id = savedLead.id
+          leadState.name = preferName(savedLead.name, leadState.name)
+          leadState.email = savedLead.email || leadState.email
+          leadState.phone = savedLead.phone || leadState.phone
+        }
       }
     } catch (leadErr) {
       console.warn('[chat] lead upsert skipped:', leadErr.message)
     }
 
+    const visitorName = preferName(leadState.name, existingConv?.visitor) || 'Widget guest'
+
     let conversation = null
     try {
       conversation = await upsertConversationRecord({
         sessionId,
-        visitor: leadState.name || 'Widget guest',
+        visitor: visitorName,
         status: escalate || alreadyHandedOff ? 'handed_off' : 'open',
         lastMessage: latestUser,
         messagesCount: clean.length + 1,

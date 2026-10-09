@@ -286,12 +286,24 @@ function ChatPage({ onBack, embed = false }) {
         },
         onLead: (item) => {
           if (!item) return
+          const placeholder = /^(chat guest|guest|widget guest)?$/i
+          const pickName = (...vals) => {
+            for (const v of vals) {
+              const n = String(v || '').trim()
+              if (n && !placeholder.test(n)) return n
+            }
+            for (const v of vals) {
+              const n = String(v || '').trim()
+              if (n) return n
+            }
+            return ''
+          }
           const next = {
             id: item.id || lead.id,
-            name: item.name || '',
-            email: item.email || '',
-            phone: item.phone || '',
-            message: item.message || '',
+            name: pickName(item.name, lead.name),
+            email: item.email || lead.email || '',
+            phone: item.phone || lead.phone || '',
+            message: item.message || lead.message || '',
           }
           setLead(next)
           saveLeadDraft(next)

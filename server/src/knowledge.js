@@ -274,6 +274,7 @@ Next field to collect if continuing lead flow: **${nextLeadField}**
 :::
 
 Fill only fields you actually know from the conversation. Use null for nextField when not in lead-capture mode.
+IMPORTANT: When the shopper tells you their name, email, or phone, ALWAYS put those values in the :::lead block on that same reply (never leave name empty as "Chat guest" once you know it).
 
 # Products (only these)
 ${productBlock}
